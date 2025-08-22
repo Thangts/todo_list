@@ -1,0 +1,23 @@
+{
+    "name": "backend",
+    "version": "1.0.0",
+    "description": "To-Do List backend with Express and PostgreSQL",
+    "main": "dist/server.js",
+    "scripts": {
+        "dev": "nodemon src/server.ts",
+        "build": "tsc",
+        "start": "node dist/server.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "@types/cors": "^2.8.19",
+        "@types/dotenv": "^6.1.1",
+        "@types/pg": "^8.15.5"
+    },
+    "dependencies": {
+        "dotenv": "^17.2.1",
+        "pg": "^8.16.3"
+    }
+}
