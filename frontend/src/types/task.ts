@@ -8,4 +8,5 @@ export interface Task {
     order: number;
     created_at?: string;
     updated_at?: string;
+    deadline?: string;
 }

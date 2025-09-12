@@ -1,33 +1,37 @@
 // frontend/src/services/taskService.ts
-import api from "./api";
+import axios from "./api";
+import { getAuthStore } from "../store/auth.store";
 import { Task } from "../types/task";
 
+// interceptor thêm token
+axios.interceptors.request.use((config) => {
+    const token = getAuthStore().token; // ✅ dùng helper
+    if (token) {
+        config.headers = {
+            ...config.headers,
+            Authorization: `Bearer ${token}`,
+        } as any;
+    }
+    return config;
+});
+
+// CRUD task
 export const getTasks = async (): Promise<Task[]> => {
-    const res = await api.get<Task[]>("/tasks");
+    const res = await axios.get("/tasks");
     return res.data;
 };
 
 export const createTask = async (task: Partial<Task>): Promise<Task> => {
-    const res = await api.post<Task>("/tasks", task);
+    const res = await axios.post("/tasks", task);
     return res.data;
 };
 
 export const updateTask = async (id: number, updates: Partial<Task>): Promise<Task> => {
-    const res = await api.put<Task>(`/tasks/${id}`, updates);
+    const res = await axios.put(`/tasks/${id}`, updates);
     return res.data;
 };
 
 export const deleteTask = async (id: number): Promise<boolean> => {
-    await api.delete(`/tasks/${id}`);
-    return true;
-};
-
-// 👇 order không bắt buộc nữa
-export const updateTaskStatus = async (
-    id: number,
-    status: Task["status"],
-    order?: number
-): Promise<Task> => {
-    const res = await api.patch<Task>(`/tasks/${id}/status`, { status, order });
-    return res.data;
+    const res = await axios.delete(`/tasks/${id}`);
+    return res.status >= 200 && res.status < 300;
 };
