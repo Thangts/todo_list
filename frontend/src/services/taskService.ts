@@ -1,37 +1,22 @@
 // frontend/src/services/taskService.ts
-import axios from "./api";
-import { getAuthStore } from "../store/auth.store";
+import api from "./api";
 import { Task } from "../types/task";
 
-// interceptor thêm token
-axios.interceptors.request.use((config) => {
-    const token = getAuthStore().token; // ✅ dùng helper
-    if (token) {
-        config.headers = {
-            ...config.headers,
-            Authorization: `Bearer ${token}`,
-        } as any;
-    }
-    return config;
-});
+export async function getAllTasks(): Promise<Task[]> {
+  const res = await api.get("/api/tasks");
+  return res.data;
+}
 
-// CRUD task
-export const getTasks = async (): Promise<Task[]> => {
-    const res = await axios.get("/tasks");
-    return res.data;
-};
+export async function createTask(task: Omit<Task, "id" | "created_at" | "updated_at" | "completed_at">): Promise<Task> {
+  const res = await api.post("/api/tasks", task);
+  return res.data;
+}
 
-export const createTask = async (task: Partial<Task>): Promise<Task> => {
-    const res = await axios.post("/tasks", task);
-    return res.data;
-};
+export async function updateTask(id: number, updates: Partial<Task>): Promise<Task> {
+  const res = await api.put(`/api/tasks/${id}`, updates);
+  return res.data;
+}
 
-export const updateTask = async (id: number, updates: Partial<Task>): Promise<Task> => {
-    const res = await axios.put(`/tasks/${id}`, updates);
-    return res.data;
-};
-
-export const deleteTask = async (id: number): Promise<boolean> => {
-    const res = await axios.delete(`/tasks/${id}`);
-    return res.status >= 200 && res.status < 300;
-};
+export async function deleteTask(id: number): Promise<void> {
+  await api.delete(`/api/tasks/${id}`);
+}

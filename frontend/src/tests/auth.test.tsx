@@ -1,3 +1,4 @@
+// frontend/src/tests/auth.test.tsx
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
@@ -5,69 +6,75 @@ import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
 import { useAuthStore } from "../store/auth.store";
 
-// Mock store để không gọi API thật
+// Mock store để không gọi Zustand thật
 jest.mock("../store/auth.store");
 
-const mockLogin = jest.fn();
-const mockRegister = jest.fn();
+const mockSetAuth = jest.fn();
+const mockLogout = jest.fn();
+const mockGetToken = jest.fn();
 
 beforeEach(() => {
-    (useAuthStore as unknown as jest.Mock).mockReturnValue({
-        user: null,
-        login: mockLogin,
-        register: mockRegister,
-        logout: jest.fn(),
-    });
+  (useAuthStore as unknown as jest.Mock).mockReturnValue({
+    user: null,
+    token: null,
+    setAuth: mockSetAuth,
+    logout: mockLogout,
+    getToken: mockGetToken,
+  });
 });
 
 afterEach(() => {
-    jest.clearAllMocks();
+  jest.clearAllMocks();
 });
 
 describe("Auth Pages", () => {
-    test("renders login form", () => {
-        render(<LoginPage />);
-        expect(screen.getByText(/Đăng nhập/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Tên đăng nhập/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Mật khẩu/i)).toBeInTheDocument();
+  test("renders login form", () => {
+    render(<LoginPage />);
+    expect(screen.getByText(/Login/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Email/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Password/i)).toBeInTheDocument();
+  });
+
+  test("submits login form", async () => {
+    render(<LoginPage />);
+
+    fireEvent.change(screen.getByPlaceholderText(/Email/i), {
+      target: { value: "test@example.com" },
     });
-
-    test("calls login on form submit", async () => {
-        render(<LoginPage />);
-
-        fireEvent.change(screen.getByLabelText(/Tên đăng nhập/i), {
-            target: { value: "testuser" },
-        });
-        fireEvent.change(screen.getByLabelText(/Mật khẩu/i), {
-            target: { value: "password123" },
-        });
-        fireEvent.click(screen.getByRole("button", { name: /Đăng nhập/i }));
-
-        await waitFor(() => {
-            expect(mockLogin).toHaveBeenCalledWith("testuser", "password123");
-        });
+    fireEvent.change(screen.getByPlaceholderText(/Password/i), {
+      target: { value: "password123" },
     });
+    fireEvent.click(screen.getByRole("button", { name: /Login/i }));
 
-    test("renders register form", () => {
-        render(<RegisterPage />);
-        expect(screen.getByText(/Đăng ký/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Tên đăng nhập/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Mật khẩu/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockSetAuth).toHaveBeenCalled(); // gọi setAuth sau login thành công
     });
+  });
 
-    test("calls register on form submit", async () => {
-        render(<RegisterPage />);
+  test("renders register form", () => {
+    render(<RegisterPage />);
+    expect(screen.getByText(/Register/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Username/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Email/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Password/i)).toBeInTheDocument();
+  });
 
-        fireEvent.change(screen.getByLabelText(/Tên đăng nhập/i), {
-            target: { value: "newuser" },
-        });
-        fireEvent.change(screen.getByLabelText(/Mật khẩu/i), {
-            target: { value: "password456" },
-        });
-        fireEvent.click(screen.getByRole("button", { name: /Đăng ký/i }));
+  test("submits register form", async () => {
+    render(<RegisterPage />);
 
-        await waitFor(() => {
-            expect(mockRegister).toHaveBeenCalledWith("newuser", "password456");
-        });
+    fireEvent.change(screen.getByPlaceholderText(/Username/i), {
+      target: { value: "newuser" },
     });
+    fireEvent.change(screen.getByPlaceholderText(/Email/i), {
+      target: { value: "new@example.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/Password/i), {
+      target: { value: "password456" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Register/i }));
+
+    await waitFor(() => {
+      expect(mockSetAuth).toHaveBeenCalled(); // gọi setAuth sau register thành công
+    });
+  });
 });

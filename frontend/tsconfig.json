@@ -9,6 +9,7 @@
             "ESNext"
         ],
         "jsx": "react-jsx",
+        "jsxImportSource": "react",
         "strict": true,
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,

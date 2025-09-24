@@ -1,39 +1,157 @@
 import React, { useState } from "react";
-import { useTaskStore } from "../store/taskStore";
-import { TaskStatus } from "../types/task";
+import { Task, TaskPriority, Subtask } from "../types/task";
 
-export default function TaskForm() {
-    const { addTask } = useTaskStore();
-    const [title, setTitle] = useState("");
-    const [description, setDescription] = useState("");
-    const [status, setStatus] = useState<TaskStatus>("todo");
-    const [deadline, setDeadline] = useState("");
+interface TaskFormProps {
+    initialData?: Partial<Task>;
+    onSubmit: (data: Partial<Task>) => Promise<void> | void;
+    onCancel?: () => void;
+}
+
+const TaskForm: React.FC<TaskFormProps> = ({ initialData = {}, onSubmit, onCancel }) => {
+    const [title, setTitle] = useState(initialData.title ?? "");
+    const [description, setDescription] = useState(initialData.description ?? "");
+    const [category, setCategory] = useState(initialData.category ?? "general");
+    const [priority, setPriority] = useState<TaskPriority>((initialData.priority as TaskPriority) ?? "medium");
+    const [startDate, setStartDate] = useState(initialData.start_date ? String(initialData.start_date).slice(0, 10) : "");
+    const [dueDate, setDueDate] = useState(initialData.due_date ? String(initialData.due_date).slice(0, 10) : "");
+    const [status, setStatus] = useState<Task["status"]>(initialData.status ?? "todo");
+    const [tags, setTags] = useState<string[]>(initialData.tags ?? []);
+    const [tagInput, setTagInput] = useState("");
+    const [subtasks, setSubtasks] = useState<Omit<Subtask, "id">[]>(initialData.subtasks?.map(st => ({ title: st.title, done: st.done, order: st.order })) ?? []);
+    const [subtaskInput, setSubtaskInput] = useState("");
+
+    const addTag = () => {
+        const v = tagInput.trim();
+        if (v && !tags.includes(v)) setTags(prev => [...prev, v]);
+        setTagInput("");
+    };
+
+    const addSubtask = () => {
+        const v = subtaskInput.trim();
+        if (v) {
+            setSubtasks(prev => [...prev, { title: v, done: false, order: prev.length + 1 }]);
+            setSubtaskInput("");
+        }
+    };
+
+    const removeSubtask = (index: number) => {
+        setSubtasks(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const toggleSubtask = (index: number) => {
+        setSubtasks(prev => prev.map((st, i) => i === index ? { ...st, done: !st.done } : st));
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title.trim()) return;
-
-        await addTask({ title: title.trim(), description: description.trim() || undefined, status, deadline: deadline || undefined });
-
-        setTitle("");
-        setDescription("");
-        setStatus("todo");
-        setDeadline("");
+        console.log("Form submitted with data:", { title, description, category, priority, startDate, dueDate, status, tags, subtasks }); // Debug log
+        if (!title.trim()) {
+            alert("Tiêu đề là bắt buộc");
+            return;
+        }
+        const payload: Partial<Task> = {
+            title: title.trim(),
+            description: description.trim() || null,
+            category,
+            priority,
+            start_date: startDate ? startDate : null,
+            due_date: dueDate ? dueDate : null,
+            status,
+            tags,
+            subtasks: subtasks as Subtask[], // Cast to Subtask[] when sending to backend
+        };
+        try {
+            await onSubmit(payload);
+            console.log("onSubmit called successfully"); // Debug log
+            if (!initialData?.id) {
+                // reset form
+                setTitle("");
+                setDescription("");
+                setCategory("general");
+                setPriority("medium");
+                setStartDate("");
+                setDueDate("");
+                setStatus("todo");
+                setTags([]);
+                setSubtasks([]);
+            }
+        } catch (err) {
+            console.error("Error in onSubmit:", err);
+            alert("Có lỗi khi submit form. Kiểm tra console.");
+        }
     };
 
     return (
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16, padding: 12, borderRadius: 10, background: "#f3f4f6" }}>
-            <input type="text" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} style={{ padding: 8, borderRadius: 6, border: "1px solid #d1d5db" }} required />
-            <textarea placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} style={{ padding: 8, borderRadius: 6, border: "1px solid #d1d5db", resize: "vertical" }} />
-            <div style={{ display: "flex", gap: 8 }}>
-                <select value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)} style={{ flex: 1, padding: 6, borderRadius: 6, border: "1px solid #d1d5db" }}>
-                    <option value="todo">To Do</option>
-                    <option value="doing">Doing</option>
-                    <option value="done">Done</option>
-                </select>
-                <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} style={{ flex: 1, padding: 6, borderRadius: 6, border: "1px solid #d1d5db" }} />
+        <form className="form" onSubmit={handleSubmit}>
+            <div style={{ marginBottom: 8 }}>
+                <input type="text" placeholder="Tiêu đề" value={title} onChange={e => setTitle(e.target.value)} />
             </div>
-            <button type="submit" style={{ marginTop: 6, padding: "8px 12px", borderRadius: 6, border: "none", background: "#3b82f6", color: "white", cursor: "pointer" }}>Add Task</button>
+
+            <div style={{ marginBottom: 8 }}>
+                <textarea placeholder="Mô tả" value={description} onChange={e => setDescription(e.target.value)} />
+            </div>
+
+            <div className="row">
+                <select value={category} onChange={e => setCategory(e.target.value)}>
+                    <option value="general">Chung</option>
+                    <option value="work">Công việc</option>
+                    <option value="personal">Cá nhân</option>
+                    <option value="shopping">Mua sắm</option>
+                    <option value="study">Học tập</option>
+                </select>
+
+                <select value={priority} onChange={e => setPriority(e.target.value as TaskPriority)}>
+                    <option value="low">Thấp</option>
+                    <option value="medium">Trung bình</option>
+                    <option value="high">Cao</option>
+                </select>
+            </div>
+
+            <div className="row" style={{ marginTop: 8 }}>
+                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+            </div>
+
+            <div className="row" style={{ marginTop: 8 }}>
+                <select value={status} onChange={e => setStatus(e.target.value as Task["status"])}>
+                    <option value="todo">todo</option>
+                    <option value="doing">doing</option>
+                    <option value="done">done</option>
+                </select>
+            </div>
+
+            <div style={{ marginTop: 8 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                    <input type="text" placeholder="Thêm nhãn và nhấn Enter" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }} />
+                    <button type="button" className="btn" onClick={addTag}>Thêm</button>
+                </div>
+                <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {tags.map(t => <div key={t} className="tag">#{t}</div>)}
+                </div>
+            </div>
+
+            <div style={{ marginTop: 8 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                    <input type="text" placeholder="Thêm subtask và Enter" value={subtaskInput} onChange={e => setSubtaskInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addSubtask(); } }} />
+                    <button type="button" className="btn" onClick={addSubtask}>Thêm</button>
+                </div>
+                <div style={{ marginTop: 8 }}>
+                    {subtasks.map((st, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <input type="checkbox" checked={st.done} onChange={() => toggleSubtask(i)} />
+                            <span>{st.title}</span>
+                            <button type="button" onClick={() => removeSubtask(i)}>Xóa</button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
+                <button className="btn" type="submit">{initialData?.id ? "Cập nhật" : "Thêm"}</button>
+                {onCancel && <button type="button" className="btn btn-sm" onClick={onCancel}>Hủy</button>}
+            </div>
         </form>
     );
-}
+};
+
+export default TaskForm;

@@ -1,64 +1,46 @@
+// frontend/src/components/TaskColumn.tsx
 import React from "react";
-import { Droppable, Draggable } from "@hello-pangea/dnd";
-import TaskCard from "./TaskCard";
 import { Task, TaskStatus } from "../types/task";
+import TaskCard from "./TaskCard";
 
 interface Props {
-    status: TaskStatus;
     title: string;
+    status: TaskStatus;
     tasks: Task[];
-    color: string;
+    onDropTask: (taskId: number, newStatus: TaskStatus) => void;
+    onDeleteTask?: (id: number) => Promise<void> | void;
+    onOpenAdd?: (defaultStatus?: TaskStatus) => void;
+    onEdit?: (task: Task) => void;
 }
 
-export default function TaskColumn({ status, title, tasks, color }: Props) {
+const TaskColumn: React.FC<Props> = ({ title, status, tasks, onDropTask, onDeleteTask, onOpenAdd, onEdit }) => {
+    const handleDragOver = (e: React.DragEvent) => e.preventDefault();
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        const idStr = e.dataTransfer.getData("taskId");
+        const id = Number(idStr);
+        if (!isNaN(id)) onDropTask(id, status);
+    };
+
     return (
-        <div
-            style={{
-                flex: 1,
-                background: color,
-                padding: 12,
-                borderRadius: 12,
-                minHeight: "70vh",
-                display: "flex",
-                flexDirection: "column",
-            }}
-        >
-            <h3
-                style={{
-                    fontWeight: 700,
-                    fontSize: 16,
-                    marginBottom: 12,
-                    color: "white",
-                    display: "flex",
-                    justifyContent: "space-between",
-                }}
-            >
-                {title} <span>{tasks.length}</span>
+        <div className={`column ${status}`} onDragOver={handleDragOver} onDrop={handleDrop}>
+            <h3>
+                {title} <span className="count">{tasks.length}</span>
             </h3>
 
-            <Droppable droppableId={status}>
-                {(provided) => (
-                    <div
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        style={{ flex: 1 }}
-                    >
-                        {tasks.map((task, index) => (
-                            <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
-                                {(provided) => (
-                                    <TaskCard
-                                        task={task}
-                                        innerRef={provided.innerRef}
-                                        draggableProps={provided.draggableProps}
-                                        dragHandleProps={provided.dragHandleProps}
-                                    />
-                                )}
-                            </Draggable>
-                        ))}
-                        {provided.placeholder}
+            <div style={{ marginBottom: 8 }}>
+                <button className="btn btn-sm" onClick={() => onOpenAdd?.(status)}>Thêm</button>
+            </div>
+
+            <div>
+                {tasks.map(task => (
+                    <div key={task.id} onDragStart={e => e.dataTransfer.setData("taskId", String(task.id))} draggable>
+                        <TaskCard task={task} onDelete={async (id) => { if (onDeleteTask) await onDeleteTask(id); }} onEdit={(t) => onEdit?.(t)} />
                     </div>
-                )}
-            </Droppable>
+                ))}
+            </div>
         </div>
     );
-}
+};
+
+export default TaskColumn;

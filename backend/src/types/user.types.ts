@@ -1,21 +1,10 @@
-export interface UserDTO {
-  id: string;
+// backend/src/types/user.types.ts
+export interface User {
+  id: number;
   username: string;
-  email: string;
-}
-
-export interface RegisterInput {
-  username: string;
-  email: string;
-  password: string;
-}
-
-export interface LoginInput {
-  email: string;
-  password: string;
-}
-
-export interface TokenPayload {
-  id: string;
-  email: string;
+  email?: string;
+  points?: number;
+  streak?: number;
+  created_at?: string;
+  updated_at?: string;
 }

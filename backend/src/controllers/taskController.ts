@@ -1,44 +1,53 @@
-// backend/src/controllers/taskController.ts
 import { Request, Response } from "express";
 import * as taskService from "../services/taskService";
 
-export const getAllTasks = async (_req: Request, res: Response) => {
-    const tasks = await taskService.getAllTasks();
-    res.json(tasks);
+export const getTasks = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user.id; // Lấy user.id từ auth middleware
+        const tasks = await taskService.getAllTasks(userId); // Truyền userId vào service
+        res.json(tasks);
+    } catch (err) {
+        console.error("getTasks error", err);
+        res.status(500).json({ message: "Lỗi server khi lấy tasks" });
+    }
 };
 
 export const createTask = async (req: Request, res: Response) => {
-    const { title, description, status, order } = req.body;
-    if (!title) return res.status(400).json({ error: "Title is required" });
-
-    const task = await taskService.createTask({ title, description, status, order });
-    res.status(201).json(task);
+    try {
+        const taskData = req.body;
+        const newTask = await taskService.createTask(taskData);
+        res.status(201).json(newTask);
+    } catch (err) {
+        console.error("createTask error", err);
+        res.status(400).json({ message: "Lỗi khi tạo task" });
+    }
 };
 
 export const updateTask = async (req: Request, res: Response) => {
-    const id = Number(req.params.id);
-    if (isNaN(id)) return res.status(400).json({ error: "Invalid task id" });
-
-    const updated = await taskService.updateTask(id, req.body);
-    if (!updated) return res.status(404).json({ error: "Task not found" });
-    res.json(updated);
-};
-
-export const updateTaskStatus = async (req: Request, res: Response) => {
-    const id = Number(req.params.id);
-    const { status } = req.body;
-    if (!status) return res.status(400).json({ error: "Status is required" });
-
-    const updated = await taskService.updateTaskStatus(id, status);
-    if (!updated) return res.status(404).json({ error: "Task not found" });
-    res.json(updated);
+    try {
+        const id = parseInt(req.params.id);
+        const updates = req.body;
+        const updatedTask = await taskService.updateTask(id, updates);
+        if (!updatedTask) {
+            return res.status(404).json({ message: "Task không tìm thấy" });
+        }
+        res.json(updatedTask);
+    } catch (err) {
+        console.error("updateTask error", err);
+        res.status(400).json({ message: "Lỗi khi cập nhật task" });
+    }
 };
 
 export const deleteTask = async (req: Request, res: Response) => {
-    const id = Number(req.params.id);
-    if (isNaN(id)) return res.status(400).json({ error: "Invalid task id" });
-
-    const ok = await taskService.deleteTask(id);
-    if (!ok) return res.status(404).json({ error: "Task not found" });
-    res.status(204).send();
+    try {
+        const id = parseInt(req.params.id);
+        const success = await taskService.deleteTask(id);
+        if (!success) {
+            return res.status(404).json({ message: "Task không tìm thấy" });
+        }
+        res.status(204).send();
+    } catch (err) {
+        console.error("deleteTask error", err);
+        res.status(400).json({ message: "Lỗi khi xóa task" });
+    }
 };

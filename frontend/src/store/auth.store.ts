@@ -1,10 +1,7 @@
+// frontend/src/store/auth.store.ts
 import { create } from "zustand";
 
-interface User {
-    id: number;
-    username: string;
-}
-
+interface User { id: number; username: string; email?: string; }
 interface AuthState {
     user: User | null;
     token: string | null;
@@ -21,5 +18,4 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     getToken: () => get().token,
 }));
 
-// helper để dùng ngoài store
 export const getAuthStore = () => useAuthStore.getState();

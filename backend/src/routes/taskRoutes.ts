@@ -1,22 +1,17 @@
-// backend/src/routes/taskRoutes.ts
+//backend/src/routes/taskRoutes.ts
 import { Router } from "express";
 import * as taskController from "../controllers/taskController";
+import { requireAuth } from "../middleware/auth.middleware";
 
 const router = Router();
 
-// GET /tasks
-router.get("/", taskController.getAllTasks);
+// protect these routes
+router.use(requireAuth);
 
-// POST /tasks
+router.get("/", taskController.getTasks);
+router.get("/:id", taskController.getTasks);
 router.post("/", taskController.createTask);
-
-// PUT /tasks/:id
 router.put("/:id", taskController.updateTask);
-
-// PATCH /tasks/:id/status
-router.patch("/:id/status", taskController.updateTaskStatus);
-
-// DELETE /tasks/:id
 router.delete("/:id", taskController.deleteTask);
 
 export default router;
